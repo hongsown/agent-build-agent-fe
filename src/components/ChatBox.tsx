@@ -3,7 +3,7 @@ import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Send } from 'lucide-react';
+import { Send, ExternalLink } from 'lucide-react';
 import StepList from './StepList';
 
 interface Message {
@@ -74,6 +74,13 @@ const ChatBox: React.FC<ChatBoxProps> = ({ onAgentDeployed }) => {
         },
         onmessage(event) {
           console.log('Received event:', event.data);
+
+          // Handle [DONE] event
+          if (event.data === '[DONE]') {
+            console.log('Stream completed');
+            return;
+          }
+
           try {
             const data: AgentStep = JSON.parse(event.data);
 
@@ -180,11 +187,10 @@ const ChatBox: React.FC<ChatBoxProps> = ({ onAgentDeployed }) => {
               className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[80%] p-3 rounded-lg ${
-                  message.sender === 'user'
+                className={`max-w-[80%] p-3 rounded-lg ${message.sender === 'user'
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted text-muted-foreground'
-                }`}
+                  }`}
               >
                 <p className="text-sm whitespace-pre-wrap">{message.text}</p>
                 <span className="text-xs opacity-70 mt-1 block">
@@ -198,6 +204,34 @@ const ChatBox: React.FC<ChatBoxProps> = ({ onAgentDeployed }) => {
           {currentSteps.length > 0 && (
             <div className="mt-4 w-full">
               <StepList steps={currentSteps} />
+            </div>
+          )}
+
+          {currentSteps.some(step => step.activity === 'agent_deployed') && (
+            <div className="mt-4 w-full">
+              <div className="flex justify-center">
+                <Button
+                  onClick={() => {
+                    const deployedAgent = currentSteps.find(step => step.activity === 'agent_deployed');
+                    if (deployedAgent?.id) {
+                      window.open(`/agent/${deployedAgent.id}`, '_blank');
+                    }
+                  }}
+                  className="w-full max-w-sm"
+                  size="lg"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Open Agent Chat
+                </Button>
+              </div>
+              {(() => {
+                const deployedAgent = currentSteps.find(step => step.activity === 'agent_deployed');
+                return deployedAgent?.id ? (
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    Agent ID: {deployedAgent.id}
+                  </p>
+                ) : null;
+              })()}
             </div>
           )}
 

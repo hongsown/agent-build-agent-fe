@@ -4,8 +4,6 @@ import ChatBox from './ChatBox';
 const HomePage: React.FC = () => {
 
   const handleAgentDeployed = (agentId: number) => {
-    // Navigate to the agent chat page when agent is deployed
-    // This will be handled by the StepList component's button click
     console.log(`Agent ${agentId} deployed successfully`);
   };
 

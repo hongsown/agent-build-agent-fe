@@ -1,7 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { CheckCircle, Clock, Globe, Database, Rocket, ExternalLink } from 'lucide-react';
+import { CheckCircle, Clock, Globe, Database, Rocket } from 'lucide-react';
 
 interface AgentStep {
   activity: string;
@@ -36,7 +35,7 @@ const StepList: React.FC<StepListProps> = ({ steps }) => {
           icon: <Rocket className="h-4 w-4" />,
           title: 'Deploying Agent',
           description: 'Setting up the Q&A agent with processed knowledge',
-          status: 'in_progress' as const,
+          status: 'completed' as const,
         };
       case 'agent_deployed':
         return {
@@ -66,11 +65,6 @@ const StepList: React.FC<StepListProps> = ({ steps }) => {
     }
   };
 
-  const handleOpenAgent = (agentId: number) => {
-    window.open(`/agent/${agentId}`, '_blank');
-  };
-
-  const deployedAgent = steps.find(step => step.activity === 'agent_deployed');
 
   return (
     <Card className="w-full max-w-full">
@@ -111,22 +105,6 @@ const StepList: React.FC<StepListProps> = ({ steps }) => {
           );
         })}
 
-        {/* Show "Open Agent Chat" button when agent is deployed */}
-        {deployedAgent && deployedAgent.id && (
-          <div className="pt-4 border-t">
-            <Button
-              onClick={() => handleOpenAgent(deployedAgent.id!)}
-              className="w-full"
-              size="lg"
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Open Agent Chat
-            </Button>
-            <p className="text-xs text-muted-foreground mt-2 text-center">
-              Agent ID: {deployedAgent.id}
-            </p>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
