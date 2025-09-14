@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useRef, useEffect } from 'react';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { Button } from '@/components/ui/button';
@@ -29,7 +30,6 @@ const ChatBox: React.FC<ChatBoxProps> = ({ onAgentDeployed }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentSteps, setCurrentSteps] = useState<AgentStep[]>([]);
-  const [sessionId, setSessionId] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -62,10 +62,9 @@ const ChatBox: React.FC<ChatBoxProps> = ({ onAgentDeployed }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          session_id: sessionId || undefined,
           message: input,
         }),
-        onopen(res) {
+        onopen: async (res) => {
           if (res.ok && res.status === 200) {
             console.log('Connection made ', res);
           } else if (res.status >= 400 && res.status < 500 && res.status !== 429) {
@@ -104,7 +103,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ onAgentDeployed }) => {
               case 'streaming':
                 if (data.message) {
                   // Add or update the streaming message
-                  setMessages((prev) => {
+                  setMessages((prev: any) => {
                     const lastMessage = prev[prev.length - 1];
                     if (lastMessage && lastMessage.sender === 'assistant' && lastMessage.id === 'streaming') {
                       // Update existing streaming message
@@ -188,8 +187,8 @@ const ChatBox: React.FC<ChatBoxProps> = ({ onAgentDeployed }) => {
             >
               <div
                 className={`max-w-[80%] p-3 rounded-lg ${message.sender === 'user'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground'
                   }`}
               >
                 <p className="text-sm whitespace-pre-wrap">{message.text}</p>

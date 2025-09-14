@@ -137,7 +137,7 @@ const AgentChatPage: React.FC = () => {
           session_id: sessionId.trim() || undefined,
           message: input,
         }),
-        onopen(res) {
+        onopen: async (res) => {
           if (res.ok && res.status === 200) {
             console.log('Connection made ', res);
           } else if (res.status >= 400 && res.status < 500 && res.status !== 429) {
