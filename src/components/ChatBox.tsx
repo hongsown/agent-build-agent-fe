@@ -4,8 +4,9 @@ import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Send, ExternalLink } from 'lucide-react';
+import { Send, ExternalLink, Settings } from 'lucide-react';
 import StepList from './StepList';
+import AgentSettings from './AgentSettings';
 
 interface Message {
   id: string;
@@ -30,10 +31,23 @@ const ChatBox: React.FC<ChatBoxProps> = ({ onAgentDeployed }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentSteps, setCurrentSteps] = useState<AgentStep[]>([]);
+  const [showSettings, setShowSettings] = useState(false);
+  const [selectedTone, setSelectedTone] = useState('friendly');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const getTonePrompt = (toneId: string) => {
+    const tones: Record<string, string> = {
+      professional: 'Always respond in a professional, formal, and precise manner. Use proper business language and maintain a respectful tone.',
+      friendly: 'Be warm, friendly, and approachable in your responses. Use a conversational tone that makes users feel comfortable and welcomed.',
+      expert: 'Respond as an authoritative expert with deep knowledge. Provide detailed, comprehensive answers with technical accuracy and professional credibility.',
+      casual: 'Use a casual, relaxed tone as if talking to a friend. Keep responses natural and conversational without being overly formal.',
+      helpful: 'Be extremely helpful, patient, and supportive. Go above and beyond to assist users and provide comprehensive guidance.'
+    };
+    return tones[toneId] || tones.friendly;
   };
 
   useEffect(() => {
@@ -62,7 +76,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ onAgentDeployed }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: input,
+          message: `${input} with Tone instruction: ${getTonePrompt(selectedTone)}`,
         }),
         onopen: async (res) => {
           if (res.ok && res.status === 200) {
@@ -175,7 +189,23 @@ const ChatBox: React.FC<ChatBoxProps> = ({ onAgentDeployed }) => {
   return (
     <Card className="w-full max-w-2xl mx-auto h-[600px] flex flex-col">
       <CardHeader>
-        <CardTitle>Agent Builder Chat</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>Agent Builder Chat</CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowSettings(true)}
+            disabled={isLoading}
+          >
+            <Settings className="h-4 w-4 mr-1" />
+            Settings
+          </Button>
+        </div>
+        {selectedTone && (
+          <p className="text-sm text-muted-foreground">
+            Tone: <span className="capitalize">{selectedTone === 'friendly' ? 'Friendly & Warm' : selectedTone === 'professional' ? 'Professional' : selectedTone === 'expert' ? 'Expert' : selectedTone === 'casual' ? 'Casual' : 'Supportive'}</span>
+          </p>
+        )}
       </CardHeader>
       <CardContent className="flex-1 flex flex-col space-y-4 overflow-hidden">
         {/* Messages area */}
@@ -251,6 +281,17 @@ const ChatBox: React.FC<ChatBoxProps> = ({ onAgentDeployed }) => {
             <Send className="h-4 w-4" />
           </Button>
         </div>
+
+        {/* Settings Modal */}
+        {showSettings && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <AgentSettings
+              selectedTone={selectedTone}
+              onToneChange={setSelectedTone}
+              onClose={() => setShowSettings(false)}
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   );
