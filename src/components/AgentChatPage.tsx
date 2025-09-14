@@ -13,13 +13,40 @@ interface Message {
   timestamp: Date;
 }
 
+interface AgentInfo {
+  name: string;
+  system_prompt: string;
+  tools: Array<{
+    tool_name: string;
+    tool_description: string;
+    tool_args: {
+      document_id: string;
+    };
+  }>;
+}
+
 const AgentChatPage: React.FC = () => {
   const { agentId } = useParams<{ agentId: string }>();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
+  const [agentInfo, setAgentInfo] = useState<AgentInfo | null>(null);
+  const [isLoadingInfo, setIsLoadingInfo] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+
+  const getOrCreateSessionId = () => {
+    const storageKey = `agent_session_${agentId}`;
+    let sessionId = localStorage.getItem(storageKey);
+
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      localStorage.setItem(storageKey, sessionId);
+    }
+
+    return sessionId;
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -30,14 +57,59 @@ const AgentChatPage: React.FC = () => {
   }, [messages]);
 
   useEffect(() => {
-    // Add a welcome message when component loads
-    const welcomeMessage: Message = {
-      id: 'welcome',
-      text: `Hello! I'm your Q&A agent (ID: ${agentId}). I can help answer questions based on the knowledge I've been trained on. What would you like to know?`,
-      sender: 'assistant',
-      timestamp: new Date(),
+    if (agentId) {
+      const sessionId = getOrCreateSessionId();
+      setSessionId(sessionId);
+      console.log('Session ID for agent', agentId, ':', sessionId);
+    }
+  }, [agentId]);
+
+  useEffect(() => {
+    const fetchAgentInfo = async () => {
+      try {
+        setIsLoadingInfo(true);
+        const response = await fetch(`http://54.179.34.55:5001/agent/${agentId}`,);
+        if (response.ok) {
+          const info: AgentInfo = await response.json();
+          setAgentInfo(info);
+
+          // Add a welcome message with agent name
+          const welcomeMessage: Message = {
+            id: 'welcome',
+            text: `Hello! I'm ${info.name}. I can help answer questions based on the knowledge I've been trained on. What would you like to know?`,
+            sender: 'assistant',
+            timestamp: new Date(),
+          };
+          setMessages([welcomeMessage]);
+        } else {
+          console.error('Failed to fetch agent info');
+          // Fallback welcome message
+          const welcomeMessage: Message = {
+            id: 'welcome',
+            text: `Hello! I'm your Q&A agent (ID: ${agentId}). I can help answer questions based on the knowledge I've been trained on. What would you like to know?`,
+            sender: 'assistant',
+            timestamp: new Date(),
+          };
+          setMessages([welcomeMessage]);
+        }
+      } catch (error) {
+        console.error('Error fetching agent info:', error);
+        // Fallback welcome message
+        const welcomeMessage: Message = {
+          id: 'welcome',
+          text: `Hello! I'm your Q&A agent (ID: ${agentId}). I can help answer questions based on the knowledge I've been trained on. What would you like to know?`,
+          sender: 'assistant',
+          timestamp: new Date(),
+        };
+        setMessages([welcomeMessage]);
+      } finally {
+        setIsLoadingInfo(false);
+      }
     };
-    setMessages([welcomeMessage]);
+
+    if (agentId) {
+      fetchAgentInfo();
+    }
   }, [agentId]);
 
   const sendMessage = async () => {
@@ -55,13 +127,13 @@ const AgentChatPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await fetchEventSource(`http://54.179.34.55:5001/agents/${agentId}/chat`, {
+      await fetchEventSource(`http://54.179.34.55:5001/agent/${agentId}/send`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          session_id: sessionId || undefined,
+          session_id: sessionId.trim() || undefined,
           message: input,
         }),
         onopen(res) {
@@ -73,6 +145,12 @@ const AgentChatPage: React.FC = () => {
         },
         onmessage(event) {
           console.log('Received event:', event.data);
+
+          if (event.data === '[DONE]') {
+            console.log('Stream completed');
+            return;
+          }
+
           try {
             const data = JSON.parse(event.data);
 
@@ -192,24 +270,31 @@ const AgentChatPage: React.FC = () => {
 
         <Card className="h-[calc(100vh-120px)] flex flex-col">
           <CardHeader>
-            <CardTitle>Agent Chat - ID: {agentId}</CardTitle>
+            <CardTitle>
+              {isLoadingInfo ? (
+                `Loading Agent...`
+              ) : agentInfo ? (
+                agentInfo.name
+              ) : (
+                `Agent Chat - ID: ${agentId}`
+              )}
+            </CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 flex flex-col space-y-4">
+          <CardContent className="flex-1 flex flex-col space-y-4 overflow-auto">
             {/* Messages area */}
-            <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-4 pr-2">
               {messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                  className={`flex min-w-0 ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[80%] p-3 rounded-lg ${
-                      message.sender === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-muted-foreground'
-                    }`}
+                    className={`max-w-[80%] p-3 rounded-lg break-words ${message.sender === 'user'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground'
+                      }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{message.text}</p>
+                    <p className="text-sm whitespace-pre-wrap break-words">{message.text}</p>
                     <span className="text-xs opacity-70 mt-1 block">
                       {message.timestamp.toLocaleTimeString()}
                     </span>
@@ -219,7 +304,7 @@ const AgentChatPage: React.FC = () => {
 
               {isLoading && (
                 <div className="flex justify-start">
-                  <div className="bg-muted text-muted-foreground p-3 rounded-lg">
+                  <div className="bg-muted text-muted-foreground p-3 rounded-lg max-w-[80%]">
                     <div className="flex items-center space-x-2">
                       <div className="flex space-x-1">
                         <div className="w-2 h-2 bg-current rounded-full animate-bounce"></div>
