@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Send, ArrowLeft } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   id: string;
@@ -294,7 +295,13 @@ const AgentChatPage: React.FC = () => {
                       : 'bg-muted text-muted-foreground'
                       }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap break-words">{message.text}</p>
+                    {message.sender === 'assistant' ? (
+                      <ReactMarkdown className="text-sm break-words prose prose-sm max-w-none dark:prose-invert">
+                        {message.text}
+                      </ReactMarkdown>
+                    ) : (
+                      <p className="text-sm whitespace-pre-wrap break-words">{message.text}</p>
+                    )}
                     <span className="text-xs opacity-70 mt-1 block">
                       {message.timestamp.toLocaleTimeString()}
                     </span>
