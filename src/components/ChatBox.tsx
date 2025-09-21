@@ -23,10 +23,11 @@ interface AgentStep {
 }
 
 interface ChatBoxProps {
+  sessionId: string;
   onAgentDeployed?: (agentId: number) => void;
 }
 
-const ChatBox: React.FC<ChatBoxProps> = ({ onAgentDeployed }) => {
+const ChatBox: React.FC<ChatBoxProps> = ({ sessionId, onAgentDeployed }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -76,7 +77,9 @@ const ChatBox: React.FC<ChatBoxProps> = ({ onAgentDeployed }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: `${input} with Tone instruction: ${getTonePrompt(selectedTone)}`,
+          session_id: sessionId,
+          tone: getTonePrompt(selectedTone),
+          message: input,
         }),
         onopen: async (res) => {
           if (res.ok && res.status === 200) {

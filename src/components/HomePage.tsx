@@ -2,7 +2,9 @@ import React from 'react';
 import ChatBox from './ChatBox';
 
 const HomePage: React.FC = () => {
-
+  const sessionId = React.useMemo(() => {
+    return crypto.randomUUID();
+  }, []);
   const handleAgentDeployed = (agentId: number) => {
     console.log(`Agent ${agentId} deployed successfully`);
   };
@@ -22,7 +24,10 @@ const HomePage: React.FC = () => {
         </div>
 
         <div className="flex justify-center">
-          <ChatBox onAgentDeployed={handleAgentDeployed} />
+          <ChatBox
+            onAgentDeployed={handleAgentDeployed}
+            sessionId={sessionId}
+          />
         </div>
 
         <div className="mt-8 text-center">
