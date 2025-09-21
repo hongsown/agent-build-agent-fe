@@ -3,7 +3,7 @@ import ChatBox from './ChatBox';
 
 const HomePage: React.FC = () => {
   const sessionId = React.useMemo(() => {
-    return crypto.randomUUID();
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   }, []);
   const handleAgentDeployed = (agentId: number) => {
     console.log(`Agent ${agentId} deployed successfully`);

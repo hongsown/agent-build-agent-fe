@@ -42,7 +42,7 @@ const AgentChatPage: React.FC = () => {
     let sessionId = localStorage.getItem(storageKey);
 
     if (!sessionId) {
-      sessionId = crypto.randomUUID();
+      sessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
       localStorage.setItem(storageKey, sessionId);
     }
 
